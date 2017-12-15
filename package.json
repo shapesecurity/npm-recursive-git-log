@@ -1,0 +1,32 @@
+{
+  "name": "npm-recursive-git-log",
+  "version": "1.0.0",
+  "description": "generate a change log from git commits, including those of updated npm dependencies, recursively",
+  "main": "src/index.js",
+  "bin": "bin/npmrgl",
+  "scripts": {
+    "lint": "eslint src",
+    "test": "ava --fail-fast --verbose test && npm run lint"
+  },
+  "author": "Michael Ficarra <mficarra@shapesecurity.com>",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shapesecurity/npm-recursive-git-log"
+  },
+  "devDependencies": {
+    "ava": "0.24.0",
+    "babel-eslint": "8.0.3",
+    "eslint": "4.13.1",
+    "eslint-plugin-flowtype": "2.40.1"
+  },
+  "dependencies": {
+    "app-root-path": "2.0.1",
+    "command-line-args": "4.0.7",
+    "mkdirp": "0.5.1",
+    "npm": "5.6.0",
+    "sb-promisify": "2.0.2",
+    "semver": "5.4.1",
+    "simple-git": "1.85.0"
+  }
+}
