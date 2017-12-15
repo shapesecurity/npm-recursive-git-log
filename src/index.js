@@ -31,11 +31,9 @@ function flattenArray(arrayLike) {
   return [].concat.apply([], arrayLike);
 }
 
-/*
 function formatDate(dateStr) {
   return new Date(dateStr).toLocaleString();
 }
-*/
 
 
 function dedupe(versionPairsWithNull) {
@@ -175,16 +173,13 @@ async function getGitLogLines(pkg, from, to) {
     })).all;
   }
   let times = lastValue(await npm.view(pkg, 'time')).time;
-  /* TODO: find a good way to report these warnings
-  let msg = hasFromTag
-    ? `Could not find git tag for version ${to} of ${pkg}.`
-    : hasToTag
-      ? `Could not find git tag for version ${from} of ${pkg}.`
-      : `Could not find git tags for versions ${from} or ${to} of ${pkg}.`;
-  console.warn(`${msg} Falling back to publish dates: ${formatDate(times[from])} to ${formatDate(times[to])}.`);
-  */
   if (DEBUG) {
-    console.error(`Falling back to date-based git logs for ${pkg}`);
+    let msg = hasFromTag
+      ? `git tag for version ${to}`
+      : hasToTag
+        ? `git tag for version ${from}`
+        : `git tags for versions ${from} or ${to}`;
+    console.error(`Could not find ${msg} of ${pkg}. Falling back to publish dates: ${formatDate(times[from])} to ${formatDate(times[to])}.`);
   }
   return (await git.log({
     '--after': times[from],
