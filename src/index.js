@@ -170,6 +170,7 @@ async function getGitLogLines(pkg, from, to) {
     return (await git.log({
       from: `refs/tags/${fromTag}`,
       to: `refs/tags/${toTag}`,
+      '--topo-order': null,
       format: LOG_FORMAT,
     })).all;
   }
@@ -188,6 +189,7 @@ async function getGitLogLines(pkg, from, to) {
   return (await git.log({
     '--after': times[from],
     '--before': times[to],
+    '--topo-order': null,
     format: LOG_FORMAT,
   })).all;
 }
