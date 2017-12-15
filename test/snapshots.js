@@ -10,7 +10,7 @@ let SNAPSHOTS = [
 ];
 
 SNAPSHOTS.forEach(({ pkg, from, to }) => {
-  test(`${pkg}: ${from} -> ${to}`, async t => {
+  test.skip(`${pkg}: ${from} -> ${to}`, async t => {
     let changelog = await npmrgl.default(pkg, from, to);
     t.snapshot(changelog);
   });
