@@ -20,7 +20,6 @@ const {
 
 const DEBUG = !!process.env.DEBUG;
 const NPM_CONFIG = {};
-const VERSION_TAG_RE = /^v\d+\.\d+\.\d+/;
 const LOG_FORMAT = { hash: '%H', subject: '%s', author: '%an' };
 const CACHE_DIR = `${rootdir}/.gitcache`;
 
@@ -155,12 +154,24 @@ async function getGitLogLines(pkg, from, to) {
     git.cwd(wd);
     await git.fetch();
   }
-  let versionTags = (await git.tags()).all.filter(t => VERSION_TAG_RE.test(t));
+  let versionTags = (await git.tags()).all;
   let fromTag = `v${from}`, toTag = `v${to}`;
   let hasFromTag = versionTags.includes(fromTag);
+  if (!hasFromTag) {
+    fromTag = from;
+    hasFromTag = versionTags.includes(fromTag);
+  }
   let hasToTag = versionTags.includes(toTag);
+  if (!hasToTag) {
+    toTag = to;
+    hasToTag = versionTags.includes(toTag);
+  }
   if (hasFromTag && hasToTag) {
-    return (await git.log({ from: fromTag, to: toTag, format: LOG_FORMAT })).all;
+    return (await git.log({
+      from: `refs/tags/${fromTag}`,
+      to: `refs/tags/${toTag}`,
+      format: LOG_FORMAT,
+    })).all;
   }
   let times = lastValue(await npm.view(pkg, 'time')).time;
   /* TODO: find a good way to report these warnings
@@ -174,7 +185,11 @@ async function getGitLogLines(pkg, from, to) {
   if (DEBUG) {
     console.error(`Falling back to date-based git logs for ${pkg}`);
   }
-  return (await git.log({ '--before': times[to], '--after': times[from], format: LOG_FORMAT })).all;
+  return (await git.log({
+    '--after': times[from],
+    '--before': times[to],
+    format: LOG_FORMAT,
+  })).all;
 }
 
 exports.default = async function (START_PACKAGE, FROM, TO) {
