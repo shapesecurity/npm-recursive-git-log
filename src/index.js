@@ -137,8 +137,8 @@ async function getGitLogLines(pkg, from, to) {
     throw new Error(`no repository URL in ${pkg}`);
   }
   let repoUrl = repoDetails.url.replace(
-    /^(?:git\+)?https?:\/\/([^/]+)\/([^/]+)\/([^/]+\.git)$/i,
-    (all, host, org, repo) => `git@${host}:${org}/${repo}`
+    /^(?:git@|(?:git\+)?https?:\/\/)([^/:]+)[/:]([^/]+)\/([^/]+\.git)$/i,
+    (all, host, org, repo) => `https://${host}/${org}/${repo}`
   );
   let wd = `${CACHE_DIR}/${pkg}`;
   if (!await fs.exists(wd)) {
