@@ -1,10 +1,9 @@
 const semver = require('semver');
-const { promisify } = require('sb-promisify');
-const mkdirp = promisify(require('mkdirp'));
+const mktemp = require('mktemp');
 const rootdir = require('app-root-path');
 const npmLoader = require('./wrapped/npm.js');
 const git = require('./wrapped/git.js');
-const fs = require('./wrapped/fs.js');
+const fs = require('fs-extra');
 let npm;
 
 const {
@@ -137,22 +136,35 @@ async function getGitLogLines(pkg, from, to) {
     /^(?:git@|(?:git\+)?https?:\/\/)([^/:]+)[/:]([^/]+)\/([^/]+\.git)$/i,
     (all, host, org, repo) => `https://${host}/${org}/${repo}`
   );
-  let wd = `${CACHE_DIR}/${pkg}`;
-  if (!await fs.exists(wd)) {
-    await mkdirp(wd);
-    if (DEBUG) {
-      console.error(`Cloning ${pkg} into ${wd}`);
+
+  let cacheDir = `${CACHE_DIR}/${pkg}`;
+  let usingCache = await fs.exists(cacheDir);
+  await fs.mkdirp(cacheDir);
+  let tempDir = await mktemp.createDir(`${cacheDir}.XXXXXXXXXXXX`);
+  try {
+    if (usingCache) {
+      if (DEBUG) {
+        console.error(`Using cached clone of ${pkg}`);
+      }
+      await fs.copy(cacheDir, tempDir);
+      await git.fetch(tempDir);
+    } else {
+      if (DEBUG) {
+        console.error(`Cloning ${pkg} into ${cacheDir}`);
+      }
+      await git.clone(repoUrl, tempDir);
+      await git.fetch(tempDir);
     }
-    await git.clone(repoUrl, wd);
-    git.cwd(wd);
-  } else {
-    if (DEBUG) {
-      console.error(`Using cached clone of ${pkg}`);
-    }
-    git.cwd(wd);
-    await git.fetch();
+    try {
+      await fs.move(tempDir, cacheDir, { overwrite: true });
+    } catch (unused) {}
+  } finally {
+    try {
+      await fs.remove(tempDir);
+    } catch (unused) {}
   }
-  let versionTags = (await git.tags()).all;
+
+  let versionTags = (await git.tags(cacheDir)).all;
   let fromTag = `v${from}`, toTag = `v${to}`;
   let hasFromTag = versionTags.includes(fromTag);
   if (!hasFromTag) {
@@ -165,10 +177,10 @@ async function getGitLogLines(pkg, from, to) {
     hasToTag = versionTags.includes(toTag);
   }
   if (hasFromTag && hasToTag) {
-    return (await git.log({
+    // console.log(`cd ${JSON.stringify(cacheDir)}; git log "refs/tags/${fromTag}..refs/tags/${toTag}"`);
+    return (await git.log(cacheDir, {
       from: `refs/tags/${fromTag}`,
       to: `refs/tags/${toTag}`,
-      '--topo-order': null,
       format: LOG_FORMAT,
     })).all;
   }
@@ -181,10 +193,10 @@ async function getGitLogLines(pkg, from, to) {
         : `git tags for versions ${from} or ${to}`;
     console.error(`Could not find ${msg} of ${pkg}. Falling back to publish dates: ${formatDate(times[from])} to ${formatDate(times[to])}.`);
   }
-  return (await git.log({
+  // console.log(`cd ${JSON.stringify(cacheDir)}; git log --after ${JSON.stringify(times[from])} --before ${JSON.stringify(times[to])}`);
+  return (await git.log(cacheDir, {
     '--after': times[from],
     '--before': times[to],
-    '--topo-order': null,
     format: LOG_FORMAT,
   })).all;
 }
