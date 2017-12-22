@@ -6,6 +6,7 @@
   "bin": "bin/npmrgl",
   "scripts": {
     "lint": "eslint src",
+    "build": "exit 0",
     "test": "ava --fail-fast --verbose test && npm run lint"
   },
   "author": "Michael Ficarra <mficarra@shapesecurity.com>",
